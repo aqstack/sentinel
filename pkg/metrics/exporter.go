@@ -70,31 +70,31 @@ func NewExporter(nodeName string) *Exporter {
 
 		// CPU metrics
 		cpuTemperature: prometheus.NewGaugeVec(prometheus.GaugeOpts{
-			Namespace: "aeop",
+			Namespace: "sentinel",
 			Subsystem: "cpu",
 			Name:      "temperature_celsius",
 			Help:      "CPU temperature in Celsius",
 		}, labels),
 		cpuUsage: prometheus.NewGaugeVec(prometheus.GaugeOpts{
-			Namespace: "aeop",
+			Namespace: "sentinel",
 			Subsystem: "cpu",
 			Name:      "usage_percent",
 			Help:      "CPU usage percentage",
 		}, labels),
 		cpuThrottled: prometheus.NewGaugeVec(prometheus.GaugeOpts{
-			Namespace: "aeop",
+			Namespace: "sentinel",
 			Subsystem: "cpu",
 			Name:      "throttled",
 			Help:      "CPU thermal throttling status (1 = throttled)",
 		}, labels),
 		cpuFrequency: prometheus.NewGaugeVec(prometheus.GaugeOpts{
-			Namespace: "aeop",
+			Namespace: "sentinel",
 			Subsystem: "cpu",
 			Name:      "frequency_mhz",
 			Help:      "Current CPU frequency in MHz",
 		}, labels),
 		loadAverage: prometheus.NewGaugeVec(prometheus.GaugeOpts{
-			Namespace: "aeop",
+			Namespace: "sentinel",
 			Subsystem: "cpu",
 			Name:      "load_average",
 			Help:      "System load average",
@@ -102,37 +102,37 @@ func NewExporter(nodeName string) *Exporter {
 
 		// Memory metrics
 		memoryTotal: prometheus.NewGaugeVec(prometheus.GaugeOpts{
-			Namespace: "aeop",
+			Namespace: "sentinel",
 			Subsystem: "memory",
 			Name:      "total_bytes",
 			Help:      "Total memory in bytes",
 		}, labels),
 		memoryAvailable: prometheus.NewGaugeVec(prometheus.GaugeOpts{
-			Namespace: "aeop",
+			Namespace: "sentinel",
 			Subsystem: "memory",
 			Name:      "available_bytes",
 			Help:      "Available memory in bytes",
 		}, labels),
 		memoryUsage: prometheus.NewGaugeVec(prometheus.GaugeOpts{
-			Namespace: "aeop",
+			Namespace: "sentinel",
 			Subsystem: "memory",
 			Name:      "usage_percent",
 			Help:      "Memory usage percentage",
 		}, labels),
 		swapTotal: prometheus.NewGaugeVec(prometheus.GaugeOpts{
-			Namespace: "aeop",
+			Namespace: "sentinel",
 			Subsystem: "memory",
 			Name:      "swap_total_bytes",
 			Help:      "Total swap in bytes",
 		}, labels),
 		swapUsed: prometheus.NewGaugeVec(prometheus.GaugeOpts{
-			Namespace: "aeop",
+			Namespace: "sentinel",
 			Subsystem: "memory",
 			Name:      "swap_used_bytes",
 			Help:      "Used swap in bytes",
 		}, labels),
 		oomKillCount: prometheus.NewCounterVec(prometheus.CounterOpts{
-			Namespace: "aeop",
+			Namespace: "sentinel",
 			Subsystem: "memory",
 			Name:      "oom_kill_total",
 			Help:      "Total OOM kill events",
@@ -140,37 +140,37 @@ func NewExporter(nodeName string) *Exporter {
 
 		// Disk metrics
 		diskTotal: prometheus.NewGaugeVec(prometheus.GaugeOpts{
-			Namespace: "aeop",
+			Namespace: "sentinel",
 			Subsystem: "disk",
 			Name:      "total_bytes",
 			Help:      "Total disk space in bytes",
 		}, labels),
 		diskUsed: prometheus.NewGaugeVec(prometheus.GaugeOpts{
-			Namespace: "aeop",
+			Namespace: "sentinel",
 			Subsystem: "disk",
 			Name:      "used_bytes",
 			Help:      "Used disk space in bytes",
 		}, labels),
 		diskUsage: prometheus.NewGaugeVec(prometheus.GaugeOpts{
-			Namespace: "aeop",
+			Namespace: "sentinel",
 			Subsystem: "disk",
 			Name:      "usage_percent",
 			Help:      "Disk usage percentage",
 		}, labels),
 		diskIORead: prometheus.NewCounterVec(prometheus.CounterOpts{
-			Namespace: "aeop",
+			Namespace: "sentinel",
 			Subsystem: "disk",
 			Name:      "io_read_bytes_total",
 			Help:      "Total bytes read from disk",
 		}, labels),
 		diskIOWrite: prometheus.NewCounterVec(prometheus.CounterOpts{
-			Namespace: "aeop",
+			Namespace: "sentinel",
 			Subsystem: "disk",
 			Name:      "io_write_bytes_total",
 			Help:      "Total bytes written to disk",
 		}, labels),
 		diskIOLatency: prometheus.NewGaugeVec(prometheus.GaugeOpts{
-			Namespace: "aeop",
+			Namespace: "sentinel",
 			Subsystem: "disk",
 			Name:      "io_latency_ms",
 			Help:      "Disk I/O latency in milliseconds",
@@ -178,31 +178,31 @@ func NewExporter(nodeName string) *Exporter {
 
 		// Network metrics
 		networkRxBytes: prometheus.NewCounterVec(prometheus.CounterOpts{
-			Namespace: "aeop",
+			Namespace: "sentinel",
 			Subsystem: "network",
 			Name:      "rx_bytes_total",
 			Help:      "Total bytes received",
 		}, labels),
 		networkTxBytes: prometheus.NewCounterVec(prometheus.CounterOpts{
-			Namespace: "aeop",
+			Namespace: "sentinel",
 			Subsystem: "network",
 			Name:      "tx_bytes_total",
 			Help:      "Total bytes transmitted",
 		}, labels),
 		networkRxErrors: prometheus.NewCounterVec(prometheus.CounterOpts{
-			Namespace: "aeop",
+			Namespace: "sentinel",
 			Subsystem: "network",
 			Name:      "rx_errors_total",
 			Help:      "Total receive errors",
 		}, labels),
 		networkTxErrors: prometheus.NewCounterVec(prometheus.CounterOpts{
-			Namespace: "aeop",
+			Namespace: "sentinel",
 			Subsystem: "network",
 			Name:      "tx_errors_total",
 			Help:      "Total transmit errors",
 		}, labels),
 		networkLatency: prometheus.NewGaugeVec(prometheus.GaugeOpts{
-			Namespace: "aeop",
+			Namespace: "sentinel",
 			Subsystem: "network",
 			Name:      "latency_ms",
 			Help:      "Network latency in milliseconds",
@@ -210,37 +210,37 @@ func NewExporter(nodeName string) *Exporter {
 
 		// Partition/consensus metrics - NOVEL CONTRIBUTION
 		partitionDetected: prometheus.NewGaugeVec(prometheus.GaugeOpts{
-			Namespace: "aeop",
+			Namespace: "sentinel",
 			Subsystem: "partition",
 			Name:      "detected",
 			Help:      "Network partition detected (1 = partitioned from control plane)",
 		}, labels),
 		partitionDuration: prometheus.NewGaugeVec(prometheus.GaugeOpts{
-			Namespace: "aeop",
+			Namespace: "sentinel",
 			Subsystem: "partition",
 			Name:      "duration_seconds",
 			Help:      "Duration of current network partition",
 		}, labels),
 		consensusLeader: prometheus.NewGaugeVec(prometheus.GaugeOpts{
-			Namespace: "aeop",
+			Namespace: "sentinel",
 			Subsystem: "consensus",
 			Name:      "is_leader",
 			Help:      "Whether this node is the local consensus leader (1 = leader)",
 		}, labels),
 		consensusTerm: prometheus.NewGaugeVec(prometheus.GaugeOpts{
-			Namespace: "aeop",
+			Namespace: "sentinel",
 			Subsystem: "consensus",
 			Name:      "term",
 			Help:      "Current Raft-lite consensus term",
 		}, labels),
 		autonomousDecisions: prometheus.NewCounterVec(prometheus.CounterOpts{
-			Namespace: "aeop",
+			Namespace: "sentinel",
 			Subsystem: "partition",
 			Name:      "autonomous_decisions_total",
 			Help:      "Total autonomous decisions made during partition",
 		}, append(labels, "decision_type")),
 		reconciliationEvents: prometheus.NewCounterVec(prometheus.CounterOpts{
-			Namespace: "aeop",
+			Namespace: "sentinel",
 			Subsystem: "partition",
 			Name:      "reconciliation_events_total",
 			Help:      "Total reconciliation events after partition heal",
@@ -248,25 +248,25 @@ func NewExporter(nodeName string) *Exporter {
 
 		// Prediction metrics - NOVEL CONTRIBUTION
 		failureProbability: prometheus.NewGaugeVec(prometheus.GaugeOpts{
-			Namespace: "aeop",
+			Namespace: "sentinel",
 			Subsystem: "prediction",
 			Name:      "failure_probability",
 			Help:      "Predicted probability of node failure (0-1)",
 		}, labels),
 		predictionConfidence: prometheus.NewGaugeVec(prometheus.GaugeOpts{
-			Namespace: "aeop",
+			Namespace: "sentinel",
 			Subsystem: "prediction",
 			Name:      "confidence",
 			Help:      "Confidence level of failure prediction (0-1)",
 		}, labels),
 		predictedTimeToFailure: prometheus.NewGaugeVec(prometheus.GaugeOpts{
-			Namespace: "aeop",
+			Namespace: "sentinel",
 			Subsystem: "prediction",
 			Name:      "time_to_failure_seconds",
 			Help:      "Predicted seconds until failure (-1 if no failure predicted)",
 		}, labels),
 		preemptiveMigrations: prometheus.NewCounterVec(prometheus.CounterOpts{
-			Namespace: "aeop",
+			Namespace: "sentinel",
 			Subsystem: "prediction",
 			Name:      "preemptive_migrations_total",
 			Help:      "Total preemptive workload migrations triggered by predictions",
@@ -274,13 +274,13 @@ func NewExporter(nodeName string) *Exporter {
 
 		// Collection metadata
 		collectionDuration: prometheus.NewGaugeVec(prometheus.GaugeOpts{
-			Namespace: "aeop",
+			Namespace: "sentinel",
 			Subsystem: "collector",
 			Name:      "duration_ms",
 			Help:      "Time taken to collect metrics in milliseconds",
 		}, labels),
 		collectionErrors: prometheus.NewCounterVec(prometheus.CounterOpts{
-			Namespace: "aeop",
+			Namespace: "sentinel",
 			Subsystem: "collector",
 			Name:      "errors_total",
 			Help:      "Total metric collection errors",
