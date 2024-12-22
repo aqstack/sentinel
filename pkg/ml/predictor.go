@@ -6,6 +6,7 @@ import (
 	"context"
 	"encoding/json"
 	"math"
+	"strings"
 	"sync"
 	"time"
 
@@ -141,34 +142,49 @@ func (p *Predictor) Predict(ctx context.Context, current *collector.NodeMetrics)
 	}
 
 	// Calculate risk factors
+	// Weights: thermal=30%, memory=20%, cpu=15%, disk=10%, network=10%, trend=15%
 	var riskScore float64
 	var confidence float64 = 0.8 // Base confidence
 	reasons := make([]string, 0)
 
 	// 1. Thermal risk - critical for edge devices
 	thermalRisk, thermalReason := p.calculateThermalRisk(current)
-	riskScore += thermalRisk * 0.35
+	riskScore += thermalRisk * 0.30
 	if thermalReason != "" {
 		reasons = append(reasons, thermalReason)
 	}
 
 	// 2. Memory pressure risk
 	memoryRisk, memoryReason := p.calculateMemoryRisk(current)
-	riskScore += memoryRisk * 0.25
+	riskScore += memoryRisk * 0.20
 	if memoryReason != "" {
 		reasons = append(reasons, memoryReason)
 	}
 
 	// 3. CPU overload risk
 	cpuRisk, cpuReason := p.calculateCPURisk(current)
-	riskScore += cpuRisk * 0.20
+	riskScore += cpuRisk * 0.15
 	if cpuReason != "" {
 		reasons = append(reasons, cpuReason)
 	}
 
-	// 4. Trend analysis
+	// 4. Disk I/O risk
+	diskRisk, diskReason := p.calculateDiskRisk(current)
+	riskScore += diskRisk * 0.10
+	if diskReason != "" {
+		reasons = append(reasons, diskReason)
+	}
+
+	// 5. Network risk
+	networkRisk, networkReason := p.calculateNetworkRisk(current)
+	riskScore += networkRisk * 0.10
+	if networkReason != "" {
+		reasons = append(reasons, networkReason)
+	}
+
+	// 6. Trend analysis
 	trendRisk, trendReason := p.calculateTrendRisk()
-	riskScore += trendRisk * 0.20
+	riskScore += trendRisk * 0.15
 	if trendReason != "" {
 		reasons = append(reasons, trendReason)
 	}
@@ -351,6 +367,112 @@ func (p *Predictor) calculateCPURisk(m *collector.NodeMetrics) (float64, string)
 	return risk, reason
 }
 
+func (p *Predictor) calculateDiskRisk(m *collector.NodeMetrics) (float64, string) {
+	var risk float64
+	var reason string
+
+	// Disk usage risk
+	usage := m.DiskUsagePercent
+	switch {
+	case usage > 95:
+		risk = 1.0
+		reason = "disk_full"
+	case usage > 90:
+		risk = 0.7 + (usage-90)/5*0.3
+		reason = "disk_critical"
+	case usage > 80:
+		risk = 0.3 + (usage-80)/10*0.4
+		reason = "disk_high"
+	case usage > 70:
+		risk = (usage - 70) / 10 * 0.3
+	}
+
+	// Disk I/O latency risk (high latency indicates struggling disk)
+	latency := m.DiskIOLatencyMs
+	switch {
+	case latency > 100:
+		risk += 0.5
+		if reason == "" {
+			reason = "disk_io_critical"
+		} else {
+			reason += ",disk_io_critical"
+		}
+	case latency > 50:
+		risk += 0.3
+		if reason == "" {
+			reason = "disk_io_high"
+		} else {
+			reason += ",disk_io_high"
+		}
+	case latency > 20:
+		risk += 0.1
+	}
+
+	if risk > 1.0 {
+		risk = 1.0
+	}
+
+	return risk, reason
+}
+
+func (p *Predictor) calculateNetworkRisk(m *collector.NodeMetrics) (float64, string) {
+	var risk float64
+	var reason string
+
+	// Network latency risk
+	latency := m.NetworkLatencyMs
+	switch {
+	case latency > 500:
+		risk = 0.8
+		reason = "network_latency_critical"
+	case latency > 200:
+		risk = 0.4 + (latency-200)/300*0.4
+		reason = "network_latency_high"
+	case latency > 100:
+		risk = (latency - 100) / 100 * 0.4
+		reason = "network_latency_elevated"
+	}
+
+	// Network error rate risk
+	// Calculate error rate from recent history if available
+	if len(p.history) >= 2 {
+		prev := p.history[len(p.history)-2]
+		rxDelta := m.NetworkRxBytes - prev.NetworkRxBytes
+		txDelta := m.NetworkTxBytes - prev.NetworkTxBytes
+		rxErrDelta := m.NetworkRxErrors - prev.NetworkRxErrors
+		txErrDelta := m.NetworkTxErrors - prev.NetworkTxErrors
+
+		totalBytes := rxDelta + txDelta
+		totalErrors := rxErrDelta + txErrDelta
+
+		if totalBytes > 0 {
+			// Error rate per MB of traffic
+			errorRate := float64(totalErrors) / (float64(totalBytes) / 1024 / 1024)
+			if errorRate > 10 { // More than 10 errors per MB
+				risk += 0.4
+				if reason == "" {
+					reason = "network_errors_high"
+				} else {
+					reason += ",network_errors_high"
+				}
+			} else if errorRate > 1 {
+				risk += 0.2
+				if reason == "" {
+					reason = "network_errors_elevated"
+				} else {
+					reason += ",network_errors_elevated"
+				}
+			}
+		}
+	}
+
+	if risk > 1.0 {
+		risk = 1.0
+	}
+
+	return risk, reason
+}
+
 func (p *Predictor) calculateTrendRisk() (float64, string) {
 	if len(p.history) < 30 {
 		return 0, ""
@@ -423,7 +545,6 @@ func (p *Predictor) estimateTimeToFailure(m *collector.NodeMetrics, riskScore fl
 	}
 	n := float64(len(recent))
 	slope := (n*sumXY - sumX*sumY) / (n*sumX2 - sumX*sumX)
-	_ = (sumY - slope*sumX) / n // intercept, kept for future use
 
 	if slope <= 0 {
 		// Temperature stable or decreasing
@@ -452,33 +573,26 @@ func (p *Predictor) generateRecommendation(riskScore float64, reasons []string) 
 		// Generate specific recommendations based on reasons
 		for _, r := range reasons {
 			switch {
-			case contains(r, "thermal") || contains(r, "temp"):
+			case strings.Contains(r, "thermal") || strings.Contains(r, "temp"):
 				return "WARNING: Reduce thermal load - consider migrating CPU-intensive workloads"
-			case contains(r, "memory") || contains(r, "oom"):
+			case strings.Contains(r, "memory") || strings.Contains(r, "oom"):
 				return "WARNING: Memory pressure detected - consider evicting low-priority pods"
-			case contains(r, "cpu") || contains(r, "load"):
+			case strings.Contains(r, "cpu") || strings.Contains(r, "load"):
 				return "WARNING: CPU saturation - consider spreading workload across cluster"
+			case strings.Contains(r, "disk_full") || strings.Contains(r, "disk_critical"):
+				return "WARNING: Disk space critical - consider migrating storage-heavy workloads"
+			case strings.Contains(r, "disk_io"):
+				return "WARNING: Disk I/O degraded - consider migrating I/O-intensive workloads"
+			case strings.Contains(r, "network_latency"):
+				return "WARNING: Network latency elevated - check connectivity and consider migration"
+			case strings.Contains(r, "network_errors"):
+				return "WARNING: Network errors detected - investigate network health"
 			}
 		}
 		return "WARNING: Elevated failure risk - prepare for potential migration"
 	}
 
 	return "No action required"
-}
-
-func contains(s, substr string) bool {
-	return len(s) >= len(substr) && (s == substr || len(s) > len(substr) &&
-		(s[:len(substr)] == substr || s[len(s)-len(substr):] == substr ||
-		findSubstring(s, substr)))
-}
-
-func findSubstring(s, substr string) bool {
-	for i := 0; i <= len(s)-len(substr); i++ {
-		if s[i:i+len(substr)] == substr {
-			return true
-		}
-	}
-	return false
 }
 
 // ShouldMigrate returns true if prediction indicates workloads should be migrated.
