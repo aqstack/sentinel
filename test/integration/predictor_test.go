@@ -8,7 +8,7 @@ import (
 	"time"
 
 	"github.com/aqstack/sentinel/pkg/collector"
-	"github.com/aqstack/sentinel/pkg/ml"
+	"github.com/aqstack/sentinel/pkg/healthscore"
 )
 
 // TestPredictorIntegration tests the full prediction pipeline.
@@ -25,7 +25,7 @@ func TestPredictorIntegration(t *testing.T) {
 	}
 
 	// Create predictor
-	predictor := ml.NewPredictor("integration-test", nil)
+	predictor := healthscore.NewPredictor("integration-test", nil)
 
 	ctx := context.Background()
 
@@ -109,7 +109,7 @@ func TestCollectorPerformance(t *testing.T) {
 
 // TestPredictorMemoryUsage ensures predictor doesn't grow unbounded.
 func TestPredictorMemoryUsage(t *testing.T) {
-	predictor := ml.NewPredictor("memory-test", nil)
+	predictor := healthscore.NewPredictor("memory-test", nil)
 
 	// Add many samples (more than maxHistory)
 	for i := 0; i < 5000; i++ {

@@ -1,6 +1,6 @@
-// Package ml provides machine learning inference for failure prediction.
+// Package healthscore provides failure prediction and health scoring.
 // Optimized for resource-constrained edge environments.
-package ml
+package healthscore
 
 import (
 	"context"

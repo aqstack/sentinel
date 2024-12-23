@@ -19,7 +19,7 @@ import (
 	"github.com/aqstack/sentinel/pkg/collector"
 	"github.com/aqstack/sentinel/pkg/consensus"
 	"github.com/aqstack/sentinel/pkg/metrics"
-	"github.com/aqstack/sentinel/pkg/ml"
+	"github.com/aqstack/sentinel/pkg/healthscore"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 )
@@ -27,13 +27,13 @@ import (
 type server struct {
 	nodeName  string
 	collector *collector.Collector
-	predictor *ml.Predictor
+	predictor *healthscore.Predictor
 	exporter  *metrics.Exporter
 	consensus *consensus.Node
 
 	mu             sync.RWMutex
 	latestMetrics  *collector.NodeMetrics
-	latestPrediction *ml.Prediction
+	latestPrediction *healthscore.Prediction
 }
 
 func main() {
@@ -70,13 +70,13 @@ func main() {
 	}
 
 	// Create predictor with thresholds
-	thresholds := &ml.PredictionThresholds{
+	thresholds := &healthscore.PredictionThresholds{
 		FailureProbabilityWarn:     *warnThreshold,
 		FailureProbabilityCritical: *criticalThreshold,
 		MinConfidence:              *minConfidence,
 		TimeToFailureThreshold:     15 * time.Minute,
 	}
-	predictor := ml.NewPredictor(*nodeName, thresholds)
+	predictor := healthscore.NewPredictor(*nodeName, thresholds)
 
 	// Create metrics exporter
 	exporter := metrics.NewExporter(*nodeName)
@@ -243,7 +243,7 @@ func (s *server) runLoop(ctx context.Context, interval time.Duration) {
 	}
 }
 
-func (s *server) proposeAutonomousAction(ctx context.Context, pred *ml.Prediction) {
+func (s *server) proposeAutonomousAction(ctx context.Context, pred *healthscore.Prediction) {
 	payload, _ := json.Marshal(map[string]interface{}{
 		"node":        s.nodeName,
 		"probability": pred.FailureProbability,
