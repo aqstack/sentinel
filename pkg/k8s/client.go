@@ -18,8 +18,9 @@ import (
 
 // Client wraps the Kubernetes clientset with edge-specific operations.
 type Client struct {
-	clientset *kubernetes.Clientset
-	nodeName  string
+	clientset      *kubernetes.Clientset
+	nodeName       string
+	circuitBreaker *CircuitBreaker
 }
 
 // NewClient creates a new Kubernetes client.
@@ -43,8 +44,9 @@ func NewClient(nodeName string) (*Client, error) {
 	}
 
 	return &Client{
-		clientset: clientset,
-		nodeName:  nodeName,
+		clientset:      clientset,
+		nodeName:       nodeName,
+		circuitBreaker: NewCircuitBreaker(nil),
 	}, nil
 }
 
@@ -55,8 +57,9 @@ func NewClientWithConfig(nodeName string, config *rest.Config) (*Client, error) 
 		return nil, err
 	}
 	return &Client{
-		clientset: clientset,
-		nodeName:  nodeName,
+		clientset:      clientset,
+		nodeName:       nodeName,
+		circuitBreaker: NewCircuitBreaker(nil),
 	}, nil
 }
 
@@ -71,7 +74,23 @@ func (c *Client) IsControlPlaneReachable(ctx context.Context) bool {
 
 // GetNode returns the node object for this node.
 func (c *Client) GetNode(ctx context.Context) (*corev1.Node, error) {
-	return c.clientset.CoreV1().Nodes().Get(ctx, c.nodeName, metav1.GetOptions{})
+	if !c.circuitBreaker.Allow() {
+		return nil, ErrCircuitOpen
+	}
+
+	node, err := c.clientset.CoreV1().Nodes().Get(ctx, c.nodeName, metav1.GetOptions{})
+	if err != nil {
+		c.circuitBreaker.RecordFailure()
+		return nil, err
+	}
+
+	c.circuitBreaker.RecordSuccess()
+	return node, nil
+}
+
+// GetCircuitBreakerStats returns the current circuit breaker statistics.
+func (c *Client) GetCircuitBreakerStats() CircuitBreakerStats {
+	return c.circuitBreaker.GetStats()
 }
 
 // CordonNode marks the node as unschedulable.
