@@ -441,6 +441,118 @@ func TestTwoNodeCommunication(t *testing.T) {
 		node2.State(), node2.Term(), node2.LeaderID())
 }
 
+func TestRateLimiterTokenBucket(t *testing.T) {
+	// Create a limiter with 5 tokens, refill 10/sec
+	limiter := newTokenBucket(5, 10)
+
+	// Should allow first 5 requests immediately
+	for i := 0; i < 5; i++ {
+		if !limiter.Allow() {
+			t.Errorf("Request %d should be allowed (initial burst)", i)
+		}
+	}
+
+	// 6th request should be denied
+	if limiter.Allow() {
+		t.Error("Request 6 should be denied (bucket empty)")
+	}
+
+	// Wait for tokens to refill
+	time.Sleep(200 * time.Millisecond) // Should get ~2 tokens
+
+	// Should now allow at least 1 request
+	if !limiter.Allow() {
+		t.Error("Request after refill should be allowed")
+	}
+}
+
+func TestRateLimitConfig(t *testing.T) {
+	// Test default config
+	defaultConfig := DefaultRateLimitConfig()
+	if defaultConfig.MaxMessagesPerSecond != 100 {
+		t.Errorf("MaxMessagesPerSecond = %d, want 100", defaultConfig.MaxMessagesPerSecond)
+	}
+	if defaultConfig.BurstSize != 20 {
+		t.Errorf("BurstSize = %d, want 20", defaultConfig.BurstSize)
+	}
+	if !defaultConfig.Enabled {
+		t.Error("Enabled = false, want true")
+	}
+
+	// Test node config includes rate limit
+	nodeConfig := DefaultConfig("test-node")
+	if nodeConfig.RateLimit == nil {
+		t.Fatal("RateLimit should not be nil in default config")
+	}
+	if nodeConfig.RateLimit.MaxMessagesPerSecond != 100 {
+		t.Errorf("Node RateLimit.MaxMessagesPerSecond = %d, want 100",
+			nodeConfig.RateLimit.MaxMessagesPerSecond)
+	}
+}
+
+func TestGetRateLimitStats(t *testing.T) {
+	config := DefaultConfig("test-node")
+	node, err := NewNode(config)
+	if err != nil {
+		t.Fatalf("NewNode() error = %v", err)
+	}
+
+	stats := node.GetRateLimitStats()
+	if stats.DroppedMessages != 0 {
+		t.Errorf("DroppedMessages = %d, want 0", stats.DroppedMessages)
+	}
+	if !stats.Enabled {
+		t.Error("Enabled = false, want true")
+	}
+}
+
+func TestRateLimitDisabled(t *testing.T) {
+	config := &Config{
+		NodeID:            "test-node",
+		ElectionTimeout:   150 * time.Millisecond,
+		HeartbeatInterval: 50 * time.Millisecond,
+		RateLimit: &RateLimitConfig{
+			Enabled: false,
+		},
+	}
+
+	node, err := NewNode(config)
+	if err != nil {
+		t.Fatalf("NewNode() error = %v", err)
+	}
+
+	stats := node.GetRateLimitStats()
+	if stats.Enabled {
+		t.Error("Enabled = true, want false")
+	}
+}
+
+func TestGetOrCreateLimiter(t *testing.T) {
+	config := DefaultConfig("test-node")
+	node, err := NewNode(config)
+	if err != nil {
+		t.Fatalf("NewNode() error = %v", err)
+	}
+
+	// Get limiter for a peer
+	limiter1 := node.getOrCreateLimiter("192.168.1.1:8080")
+	if limiter1 == nil {
+		t.Fatal("getOrCreateLimiter returned nil")
+	}
+
+	// Getting same peer should return same limiter
+	limiter2 := node.getOrCreateLimiter("192.168.1.1:8080")
+	if limiter1 != limiter2 {
+		t.Error("getOrCreateLimiter should return same limiter for same peer")
+	}
+
+	// Different peer should get different limiter
+	limiter3 := node.getOrCreateLimiter("192.168.1.2:8080")
+	if limiter1 == limiter3 {
+		t.Error("getOrCreateLimiter should return different limiter for different peer")
+	}
+}
+
 func BenchmarkHandleHeartbeat(b *testing.B) {
 	config := DefaultConfig("bench-node")
 	node, err := NewNode(config)

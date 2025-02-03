@@ -60,6 +60,25 @@ const (
 	DecisionResourceScale   DecisionType = "resource_scale"
 )
 
+// RateLimitConfig configures rate limiting for consensus messages.
+type RateLimitConfig struct {
+	// MaxMessagesPerSecond is the maximum messages allowed per second per peer.
+	MaxMessagesPerSecond int
+	// BurstSize is the maximum burst of messages allowed.
+	BurstSize int
+	// Enabled determines if rate limiting is active.
+	Enabled bool
+}
+
+// DefaultRateLimitConfig returns a sensible default rate limit configuration.
+func DefaultRateLimitConfig() *RateLimitConfig {
+	return &RateLimitConfig{
+		MaxMessagesPerSecond: 100,
+		BurstSize:            20,
+		Enabled:              true,
+	}
+}
+
 // Config configures the Raft-lite consensus node.
 type Config struct {
 	// NodeID is the unique identifier for this node.
@@ -78,6 +97,9 @@ type Config struct {
 	// HeartbeatInterval is how often the leader sends heartbeats.
 	HeartbeatInterval time.Duration
 
+	// RateLimit configures rate limiting for incoming messages.
+	RateLimit *RateLimitConfig
+
 	// DecisionCallback is called when a decision is committed.
 	DecisionCallback func(Decision)
 
@@ -91,6 +113,7 @@ func DefaultConfig(nodeID string) *Config {
 		NodeID:            nodeID,
 		ElectionTimeout:   150 * time.Millisecond,
 		HeartbeatInterval: 50 * time.Millisecond,
+		RateLimit:         DefaultRateLimitConfig(),
 	}
 }
 
@@ -118,6 +141,11 @@ type Node struct {
 	peers    map[string]*peerConn
 	listener net.Listener
 
+	// Rate limiting for incoming connections
+	incomingLimiters   map[string]*tokenBucket
+	incomingLimitersMu sync.RWMutex
+	rateLimitDropped   uint64 // Counter for dropped messages
+
 	// Control
 	ctx    context.Context
 	cancel context.CancelFunc
@@ -125,10 +153,99 @@ type Node struct {
 }
 
 type peerConn struct {
-	addr     string
-	conn     net.Conn
-	lastSeen time.Time
-	healthy  bool
+	addr        string
+	conn        net.Conn
+	lastSeen    time.Time
+	healthy     bool
+	rateLimiter *tokenBucket
+}
+
+// tokenBucket implements a simple token bucket rate limiter.
+type tokenBucket struct {
+	mu         sync.Mutex
+	tokens     int
+	maxTokens  int
+	refillRate int // tokens per second
+	lastRefill time.Time
+}
+
+func newTokenBucket(maxTokens, refillRate int) *tokenBucket {
+	return &tokenBucket{
+		tokens:     maxTokens,
+		maxTokens:  maxTokens,
+		refillRate: refillRate,
+		lastRefill: time.Now(),
+	}
+}
+
+// Allow checks if a request is allowed and consumes a token if so.
+func (tb *tokenBucket) Allow() bool {
+	tb.mu.Lock()
+	defer tb.mu.Unlock()
+
+	// Refill tokens based on time elapsed
+	now := time.Now()
+	elapsed := now.Sub(tb.lastRefill)
+	tokensToAdd := int(elapsed.Seconds() * float64(tb.refillRate))
+	if tokensToAdd > 0 {
+		tb.tokens = min(tb.tokens+tokensToAdd, tb.maxTokens)
+		tb.lastRefill = now
+	}
+
+	if tb.tokens > 0 {
+		tb.tokens--
+		return true
+	}
+	return false
+}
+
+func min(a, b int) int {
+	if a < b {
+		return a
+	}
+	return b
+}
+
+// getOrCreateLimiter returns a rate limiter for the given peer address.
+func (n *Node) getOrCreateLimiter(addr string) *tokenBucket {
+	n.incomingLimitersMu.RLock()
+	limiter, exists := n.incomingLimiters[addr]
+	n.incomingLimitersMu.RUnlock()
+
+	if exists {
+		return limiter
+	}
+
+	n.incomingLimitersMu.Lock()
+	defer n.incomingLimitersMu.Unlock()
+
+	// Double-check after acquiring write lock
+	if limiter, exists = n.incomingLimiters[addr]; exists {
+		return limiter
+	}
+
+	limiter = newTokenBucket(
+		n.config.RateLimit.BurstSize,
+		n.config.RateLimit.MaxMessagesPerSecond,
+	)
+	n.incomingLimiters[addr] = limiter
+	return limiter
+}
+
+// RateLimitStats returns rate limiting statistics.
+type RateLimitStats struct {
+	DroppedMessages uint64 `json:"dropped_messages"`
+	Enabled         bool   `json:"enabled"`
+}
+
+// GetRateLimitStats returns current rate limiting statistics.
+func (n *Node) GetRateLimitStats() RateLimitStats {
+	n.mu.RLock()
+	defer n.mu.RUnlock()
+	return RateLimitStats{
+		DroppedMessages: n.rateLimitDropped,
+		Enabled:         n.config.RateLimit.Enabled,
+	}
 }
 
 // Message types for peer communication.
@@ -181,13 +298,19 @@ func NewNode(config *Config) (*Node, error) {
 
 	ctx, cancel := context.WithCancel(context.Background())
 
+	// Ensure rate limit config is set
+	if config.RateLimit == nil {
+		config.RateLimit = DefaultRateLimitConfig()
+	}
+
 	n := &Node{
-		config:      config,
-		state:       Follower,
-		lastContact: time.Now(),
-		peers:       make(map[string]*peerConn),
-		ctx:         ctx,
-		cancel:      cancel,
+		config:           config,
+		state:            Follower,
+		lastContact:      time.Now(),
+		peers:            make(map[string]*peerConn),
+		incomingLimiters: make(map[string]*tokenBucket),
+		ctx:              ctx,
+		cancel:           cancel,
 	}
 
 	return n, nil
@@ -405,6 +528,13 @@ func (n *Node) acceptLoop() {
 func (n *Node) handleConnection(conn net.Conn) {
 	defer conn.Close()
 
+	// Get peer address for rate limiting
+	remoteAddr := conn.RemoteAddr().String()
+	var limiter *tokenBucket
+	if n.config.RateLimit.Enabled {
+		limiter = n.getOrCreateLimiter(remoteAddr)
+	}
+
 	for {
 		select {
 		case <-n.ctx.Done():
@@ -416,6 +546,15 @@ func (n *Node) handleConnection(conn net.Conn) {
 		msg, err := n.recvMessage(conn)
 		if err != nil {
 			return
+		}
+
+		// Apply rate limiting if enabled
+		if limiter != nil && !limiter.Allow() {
+			n.mu.Lock()
+			n.rateLimitDropped++
+			n.mu.Unlock()
+			// Drop the message silently - don't respond
+			continue
 		}
 
 		resp := n.handleMessage(msg)
