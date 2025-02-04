@@ -59,6 +59,10 @@ type Exporter struct {
 	// Collection metadata
 	collectionDuration *prometheus.GaugeVec
 	collectionErrors   *prometheus.CounterVec
+
+	// Rate limiting metrics
+	rateLimitDropped *prometheus.CounterVec
+	rateLimitEnabled *prometheus.GaugeVec
 }
 
 // NewExporter creates a new Prometheus exporter for node metrics.
@@ -285,6 +289,20 @@ func NewExporter(nodeName string) *Exporter {
 			Name:      "errors_total",
 			Help:      "Total metric collection errors",
 		}, append(labels, "subsystem")),
+
+		// Rate limiting metrics
+		rateLimitDropped: prometheus.NewCounterVec(prometheus.CounterOpts{
+			Namespace: "sentinel",
+			Subsystem: "consensus",
+			Name:      "rate_limit_dropped_total",
+			Help:      "Total messages dropped due to rate limiting",
+		}, labels),
+		rateLimitEnabled: prometheus.NewGaugeVec(prometheus.GaugeOpts{
+			Namespace: "sentinel",
+			Subsystem: "consensus",
+			Name:      "rate_limit_enabled",
+			Help:      "Whether rate limiting is enabled (1 = enabled)",
+		}, labels),
 	}
 
 	return e
@@ -327,6 +345,8 @@ func (e *Exporter) Register(reg prometheus.Registerer) error {
 		e.preemptiveMigrations,
 		e.collectionDuration,
 		e.collectionErrors,
+		e.rateLimitDropped,
+		e.rateLimitEnabled,
 	}
 
 	for _, c := range collectors {
@@ -427,4 +447,20 @@ func (e *Exporter) RecordReconciliation(result string) {
 // RecordPreemptiveMigration records a preemptive migration triggered by prediction.
 func (e *Exporter) RecordPreemptiveMigration(reason string) {
 	e.preemptiveMigrations.WithLabelValues(e.nodeName, reason).Inc()
+}
+
+// UpdateRateLimitStats updates rate limiting metrics.
+// droppedDelta is the number of messages dropped since the last update.
+func (e *Exporter) UpdateRateLimitStats(droppedDelta uint64, enabled bool) {
+	node := e.nodeName
+
+	if droppedDelta > 0 {
+		e.rateLimitDropped.WithLabelValues(node).Add(float64(droppedDelta))
+	}
+
+	if enabled {
+		e.rateLimitEnabled.WithLabelValues(node).Set(1)
+	} else {
+		e.rateLimitEnabled.WithLabelValues(node).Set(0)
+	}
 }
