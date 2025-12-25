@@ -1,4 +1,4 @@
-// Package integration contains integration tests for AEOP components.
+// Package integration contains integration tests for Sentinel components.
 package integration
 
 import (
@@ -7,8 +7,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/aqstack/aeop/pkg/collector"
-	"github.com/aqstack/aeop/pkg/ml"
+	"github.com/aqstack/sentinel/pkg/collector"
+	"github.com/aqstack/sentinel/pkg/ml"
 )
 
 // TestPredictorIntegration tests the full prediction pipeline.

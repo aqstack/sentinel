@@ -1,6 +1,6 @@
-# Autonomous Edge Operations Agent
+# Sentinel
 
-A lightweight agent for Kubernetes edge nodes that provides **predictive failure detection** and **partition-resilient orchestration** for Kubernetes clusters running at the edge.
+A lightweight agent for Kubernetes edge nodes that provides **predictive failure detection** and **partition-resilient orchestration**.
 
 ## Novel Contributions
 
@@ -41,7 +41,7 @@ make build
 ./bin/predictor -node=my-node
 
 # Deploy to K3s cluster
-helm install aeop ./deploy/helm/aeop
+helm install sentinel ./deploy/helm/sentinel
 ```
 
 ## Architecture
@@ -98,16 +98,16 @@ Raft-lite implementation for edge:
 ## Prometheus Metrics
 
 ### Prediction Metrics
-- `aeop_prediction_failure_probability` - Predicted failure probability (0-1)
-- `aeop_prediction_confidence` - Prediction confidence level
-- `aeop_prediction_time_to_failure_seconds` - Estimated time until failure
-- `aeop_prediction_preemptive_migrations_total` - Migration count
+- `sentinel_prediction_failure_probability` - Predicted failure probability (0-1)
+- `sentinel_prediction_confidence` - Prediction confidence level
+- `sentinel_prediction_time_to_failure_seconds` - Estimated time until failure
+- `sentinel_prediction_preemptive_migrations_total` - Migration count
 
 ### Partition Metrics
-- `aeop_partition_detected` - Partition status (0/1)
-- `aeop_partition_duration_seconds` - Current partition duration
-- `aeop_consensus_is_leader` - Leader status
-- `aeop_partition_autonomous_decisions_total` - Autonomous decisions made
+- `sentinel_partition_detected` - Partition status (0/1)
+- `sentinel_partition_duration_seconds` - Current partition duration
+- `sentinel_consensus_is_leader` - Leader status
+- `sentinel_partition_autonomous_decisions_total` - Autonomous decisions made
 
 ## Configuration
 
