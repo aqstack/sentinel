@@ -28,12 +28,12 @@ type Exporter struct {
 	oomKillCount    *prometheus.CounterVec
 
 	// Disk metrics
-	diskTotal      *prometheus.GaugeVec
-	diskUsed       *prometheus.GaugeVec
-	diskUsage      *prometheus.GaugeVec
-	diskIORead     *prometheus.CounterVec
-	diskIOWrite    *prometheus.CounterVec
-	diskIOLatency  *prometheus.GaugeVec
+	diskTotal     *prometheus.GaugeVec
+	diskUsed      *prometheus.GaugeVec
+	diskUsage     *prometheus.GaugeVec
+	diskIORead    *prometheus.CounterVec
+	diskIOWrite   *prometheus.CounterVec
+	diskIOLatency *prometheus.GaugeVec
 
 	// Network metrics
 	networkRxBytes  *prometheus.CounterVec
@@ -51,10 +51,10 @@ type Exporter struct {
 	reconciliationEvents *prometheus.CounterVec
 
 	// Prediction metrics
-	failureProbability   *prometheus.GaugeVec
-	predictionConfidence *prometheus.GaugeVec
+	failureProbability     *prometheus.GaugeVec
+	predictionConfidence   *prometheus.GaugeVec
 	predictedTimeToFailure *prometheus.GaugeVec
-	preemptiveMigrations *prometheus.CounterVec
+	preemptiveMigrations   *prometheus.CounterVec
 
 	// Collection metadata
 	collectionDuration *prometheus.GaugeVec

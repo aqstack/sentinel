@@ -20,13 +20,13 @@ type NodeMetrics struct {
 	NodeName  string    `json:"node_name"`
 
 	// CPU metrics
-	CPUTemperature    float64 `json:"cpu_temperature_celsius"`
-	CPUUsagePercent   float64 `json:"cpu_usage_percent"`
-	CPUThrottled      bool    `json:"cpu_throttled"`
-	CPUFrequencyMHz   float64 `json:"cpu_frequency_mhz"`
-	LoadAverage1Min   float64 `json:"load_average_1min"`
-	LoadAverage5Min   float64 `json:"load_average_5min"`
-	LoadAverage15Min  float64 `json:"load_average_15min"`
+	CPUTemperature   float64 `json:"cpu_temperature_celsius"`
+	CPUUsagePercent  float64 `json:"cpu_usage_percent"`
+	CPUThrottled     bool    `json:"cpu_throttled"`
+	CPUFrequencyMHz  float64 `json:"cpu_frequency_mhz"`
+	LoadAverage1Min  float64 `json:"load_average_1min"`
+	LoadAverage5Min  float64 `json:"load_average_5min"`
+	LoadAverage15Min float64 `json:"load_average_15min"`
 
 	// Memory metrics
 	MemoryTotalBytes     uint64  `json:"memory_total_bytes"`
@@ -37,12 +37,12 @@ type NodeMetrics struct {
 	OOMKillCount         uint64  `json:"oom_kill_count"`
 
 	// Disk metrics
-	DiskTotalBytes      uint64  `json:"disk_total_bytes"`
-	DiskUsedBytes       uint64  `json:"disk_used_bytes"`
-	DiskUsagePercent    float64 `json:"disk_usage_percent"`
-	DiskIOReadBytes     uint64  `json:"disk_io_read_bytes"`
-	DiskIOWriteBytes    uint64  `json:"disk_io_write_bytes"`
-	DiskIOLatencyMs     float64 `json:"disk_io_latency_ms"`
+	DiskTotalBytes   uint64  `json:"disk_total_bytes"`
+	DiskUsedBytes    uint64  `json:"disk_used_bytes"`
+	DiskUsagePercent float64 `json:"disk_usage_percent"`
+	DiskIOReadBytes  uint64  `json:"disk_io_read_bytes"`
+	DiskIOWriteBytes uint64  `json:"disk_io_write_bytes"`
+	DiskIOLatencyMs  float64 `json:"disk_io_latency_ms"`
 
 	// Network metrics
 	NetworkRxBytes   uint64  `json:"network_rx_bytes"`
@@ -52,25 +52,25 @@ type NodeMetrics struct {
 	NetworkLatencyMs float64 `json:"network_latency_ms"`
 
 	// Collection metadata
-	CollectionDurationMs float64 `json:"collection_duration_ms"`
+	CollectionDurationMs float64  `json:"collection_duration_ms"`
 	Errors               []string `json:"errors,omitempty"`
 }
 
 // Collector gathers system metrics from a Linux node.
 type Collector struct {
-	nodeName       string
-	procPath       string
-	sysPath        string
-	thermalZones   []string
-	primaryDisk    string
-	networkIface   string
+	nodeName     string
+	procPath     string
+	sysPath      string
+	thermalZones []string
+	primaryDisk  string
+	networkIface string
 
 	// Previous values for delta calculations
-	mu             sync.Mutex
-	prevCPUStats   cpuStats
-	prevDiskStats  diskStats
-	prevNetStats   netStats
-	lastCollect    time.Time
+	mu            sync.Mutex
+	prevCPUStats  cpuStats
+	prevDiskStats diskStats
+	prevNetStats  netStats
+	lastCollect   time.Time
 }
 
 type cpuStats struct {

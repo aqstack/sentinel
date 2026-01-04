@@ -232,14 +232,14 @@ func (c *Client) DrainNode(ctx context.Context, gracePeriod int64) (*DrainResult
 
 // DrainResult contains the result of a drain operation.
 type DrainResult struct {
-	NodeName         string             `json:"node_name"`
-	Started          time.Time          `json:"started"`
-	Completed        time.Time          `json:"completed"`
-	Cordoned         bool               `json:"cordoned"`
-	TotalPods        int                `json:"total_pods"`
-	EvictedPods      []string           `json:"evicted_pods"`
-	FailedEvictions  []PodEvictionError `json:"failed_evictions,omitempty"`
-	Success          bool               `json:"success"`
+	NodeName        string             `json:"node_name"`
+	Started         time.Time          `json:"started"`
+	Completed       time.Time          `json:"completed"`
+	Cordoned        bool               `json:"cordoned"`
+	TotalPods       int                `json:"total_pods"`
+	EvictedPods     []string           `json:"evicted_pods"`
+	FailedEvictions []PodEvictionError `json:"failed_evictions,omitempty"`
+	Success         bool               `json:"success"`
 }
 
 // PodEvictionError records a failed pod eviction.
@@ -280,8 +280,8 @@ type PodPriority int
 
 const (
 	PriorityLow    PodPriority = iota // BestEffort QoS
-	PriorityMedium                     // Burstable QoS
-	PriorityHigh                       // Guaranteed QoS
+	PriorityMedium                    // Burstable QoS
+	PriorityHigh                      // Guaranteed QoS
 )
 
 // GetPodPriority returns the eviction priority of a pod.

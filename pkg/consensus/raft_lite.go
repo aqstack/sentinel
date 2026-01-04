@@ -54,10 +54,10 @@ type Decision struct {
 type DecisionType string
 
 const (
-	DecisionPodReschedule  DecisionType = "pod_reschedule"
-	DecisionNodeCordon     DecisionType = "node_cordon"
+	DecisionPodReschedule   DecisionType = "pod_reschedule"
+	DecisionNodeCordon      DecisionType = "node_cordon"
 	DecisionServiceFailover DecisionType = "service_failover"
-	DecisionResourceScale  DecisionType = "resource_scale"
+	DecisionResourceScale   DecisionType = "resource_scale"
 )
 
 // Config configures the Raft-lite consensus node.
@@ -98,21 +98,21 @@ func DefaultConfig(nodeID string) *Config {
 type Node struct {
 	config *Config
 
-	mu           sync.RWMutex
-	state        NodeState
-	currentTerm  uint64
-	votedFor     string
-	leaderID     string
-	lastContact  time.Time
+	mu          sync.RWMutex
+	state       NodeState
+	currentTerm uint64
+	votedFor    string
+	leaderID    string
+	lastContact time.Time
 
 	// Decision log
-	decisions    []Decision
-	commitIndex  int
-	lastApplied  int
+	decisions   []Decision
+	commitIndex int
+	lastApplied int
 
 	// Partition detection
-	partitioned     bool
-	partitionStart  time.Time
+	partitioned    bool
+	partitionStart time.Time
 
 	// Peer connections
 	peers    map[string]*peerConn
@@ -145,10 +145,10 @@ const (
 
 // Message is the wire format for peer communication.
 type Message struct {
-	Type     MessageType `json:"type"`
-	Term     uint64      `json:"term"`
-	FromID   string      `json:"from_id"`
-	ToID     string      `json:"to_id"`
+	Type   MessageType `json:"type"`
+	Term   uint64      `json:"term"`
+	FromID string      `json:"from_id"`
+	ToID   string      `json:"to_id"`
 
 	// Vote request/response fields
 	LastLogIndex int    `json:"last_log_index,omitempty"`

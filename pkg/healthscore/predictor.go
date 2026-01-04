@@ -15,13 +15,13 @@ import (
 
 // Prediction represents a failure prediction result.
 type Prediction struct {
-	Timestamp         time.Time `json:"timestamp"`
-	NodeName          string    `json:"node_name"`
+	Timestamp          time.Time `json:"timestamp"`
+	NodeName           string    `json:"node_name"`
 	FailureProbability float64   `json:"failure_probability"`
-	Confidence        float64   `json:"confidence"`
-	TimeToFailure     float64   `json:"time_to_failure_seconds"` // -1 if no failure predicted
-	Reasons           []string  `json:"reasons"`
-	Recommendation    string    `json:"recommendation"`
+	Confidence         float64   `json:"confidence"`
+	TimeToFailure      float64   `json:"time_to_failure_seconds"` // -1 if no failure predicted
+	Reasons            []string  `json:"reasons"`
+	Recommendation     string    `json:"recommendation"`
 }
 
 // PredictionThresholds configures when to trigger alerts/actions.
@@ -52,8 +52,8 @@ type Predictor struct {
 	nodeName   string
 	thresholds *PredictionThresholds
 
-	mu       sync.RWMutex
-	history  []collector.NodeMetrics
+	mu         sync.RWMutex
+	history    []collector.NodeMetrics
 	maxHistory int
 
 	// Feature statistics for normalization
@@ -61,11 +61,11 @@ type Predictor struct {
 }
 
 type featureStats struct {
-	cpuTempMean, cpuTempStd     float64
-	cpuUsageMean, cpuUsageStd   float64
-	memUsageMean, memUsageStd   float64
-	loadMean, loadStd           float64
-	samples                     int
+	cpuTempMean, cpuTempStd   float64
+	cpuUsageMean, cpuUsageStd float64
+	memUsageMean, memUsageStd float64
+	loadMean, loadStd         float64
+	samples                   int
 }
 
 // NewPredictor creates a new failure predictor.
@@ -129,10 +129,10 @@ func (p *Predictor) Predict(ctx context.Context, current *collector.NodeMetrics)
 	defer p.mu.RUnlock()
 
 	pred := &Prediction{
-		Timestamp:         time.Now(),
-		NodeName:          p.nodeName,
-		TimeToFailure:     -1, // No failure predicted by default
-		Recommendation:    "No action required",
+		Timestamp:      time.Now(),
+		NodeName:       p.nodeName,
+		TimeToFailure:  -1, // No failure predicted by default
+		Recommendation: "No action required",
 	}
 
 	if len(p.history) < 10 {
@@ -619,9 +619,9 @@ func (p *Predictor) GetStats() json.RawMessage {
 	defer p.mu.RUnlock()
 
 	data, _ := json.Marshal(map[string]interface{}{
-		"samples":       p.stats.samples,
-		"cpu_temp_mean": p.stats.cpuTempMean,
-		"cpu_temp_std":  p.stats.cpuTempStd,
+		"samples":        p.stats.samples,
+		"cpu_temp_mean":  p.stats.cpuTempMean,
+		"cpu_temp_std":   p.stats.cpuTempStd,
 		"cpu_usage_mean": p.stats.cpuUsageMean,
 		"cpu_usage_std":  p.stats.cpuUsageStd,
 		"mem_usage_mean": p.stats.memUsageMean,

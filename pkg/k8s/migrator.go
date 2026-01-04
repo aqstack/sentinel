@@ -24,25 +24,25 @@ const (
 
 // MigrationRequest represents a request to migrate workloads off a node.
 type MigrationRequest struct {
-	NodeName     string          `json:"node_name"`
-	Reason       MigrationReason `json:"reason"`
-	Priority     int             `json:"priority"` // Higher = more urgent
-	GracePeriod  int64           `json:"grace_period_seconds"`
-	DryRun       bool            `json:"dry_run"`
-	RequestedAt  time.Time       `json:"requested_at"`
-	RequestedBy  string          `json:"requested_by"` // predictor, consensus, manual
+	NodeName    string          `json:"node_name"`
+	Reason      MigrationReason `json:"reason"`
+	Priority    int             `json:"priority"` // Higher = more urgent
+	GracePeriod int64           `json:"grace_period_seconds"`
+	DryRun      bool            `json:"dry_run"`
+	RequestedAt time.Time       `json:"requested_at"`
+	RequestedBy string          `json:"requested_by"` // predictor, consensus, manual
 }
 
 // MigrationResult contains the outcome of a migration operation.
 type MigrationResult struct {
-	Request          MigrationRequest `json:"request"`
-	StartedAt        time.Time        `json:"started_at"`
-	CompletedAt      time.Time        `json:"completed_at"`
-	Success          bool             `json:"success"`
-	PodsEvicted      int              `json:"pods_evicted"`
-	PodsFailed       int              `json:"pods_failed"`
-	DrainResult      *DrainResult     `json:"drain_result,omitempty"`
-	Error            string           `json:"error,omitempty"`
+	Request     MigrationRequest `json:"request"`
+	StartedAt   time.Time        `json:"started_at"`
+	CompletedAt time.Time        `json:"completed_at"`
+	Success     bool             `json:"success"`
+	PodsEvicted int              `json:"pods_evicted"`
+	PodsFailed  int              `json:"pods_failed"`
+	DrainResult *DrainResult     `json:"drain_result,omitempty"`
+	Error       string           `json:"error,omitempty"`
 }
 
 // Migrator handles preemptive workload migration.
@@ -50,11 +50,11 @@ type Migrator struct {
 	client   *Client
 	nodeName string
 
-	mu              sync.Mutex
-	inProgress      bool
-	currentRequest  *MigrationRequest
-	history         []MigrationResult
-	maxHistory      int
+	mu             sync.Mutex
+	inProgress     bool
+	currentRequest *MigrationRequest
+	history        []MigrationResult
+	maxHistory     int
 
 	// Callbacks
 	onMigrationStart    func(MigrationRequest)
@@ -198,12 +198,12 @@ type ReconciliationAction struct {
 
 // ReconciliationResult contains the outcome of reconciliation.
 type ReconciliationResult struct {
-	NodeName    string   `json:"node_name"`
-	StartedAt   time.Time `json:"started_at"`
-	CompletedAt time.Time `json:"completed_at"`
+	NodeName    string                 `json:"node_name"`
+	StartedAt   time.Time              `json:"started_at"`
+	CompletedAt time.Time              `json:"completed_at"`
 	Actions     []ReconciliationAction `json:"actions_reconciled"`
-	Conflicts   []string `json:"conflicts,omitempty"`
-	Success     bool     `json:"success"`
+	Conflicts   []string               `json:"conflicts,omitempty"`
+	Success     bool                   `json:"success"`
 }
 
 // Reconcile processes actions taken during partition and reconciles with control plane.

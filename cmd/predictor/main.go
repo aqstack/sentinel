@@ -18,8 +18,8 @@ import (
 
 	"github.com/aqstack/sentinel/pkg/collector"
 	"github.com/aqstack/sentinel/pkg/consensus"
-	"github.com/aqstack/sentinel/pkg/metrics"
 	"github.com/aqstack/sentinel/pkg/healthscore"
+	"github.com/aqstack/sentinel/pkg/metrics"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 )
@@ -31,8 +31,8 @@ type server struct {
 	exporter  *metrics.Exporter
 	consensus *consensus.Node
 
-	mu             sync.RWMutex
-	latestMetrics  *collector.NodeMetrics
+	mu               sync.RWMutex
+	latestMetrics    *collector.NodeMetrics
 	latestPrediction *healthscore.Prediction
 }
 
