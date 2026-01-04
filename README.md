@@ -1,5 +1,8 @@
 # Sentinel
 
+[![CI](https://github.com/aqstack/sentinel/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/aqstack/sentinel/actions/workflows/ci.yml)
+[![Go Report Card](https://goreportcard.com/badge/github.com/aqstack/sentinel)](https://goreportcard.com/report/github.com/aqstack/sentinel)
+
 Predictive failure detection and autonomous orchestration for Kubernetes edge nodes.
 
 ## What it does
